@@ -3295,6 +3295,48 @@ updateAuthUI();
   addInstallCard('<h2>Install Me &amp; You 📲</h2><p>In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.</p>');
  }
 })();
+</script><script>
+(function(){
+ var SITE_KEY='0x4AAAAAAGRUHSQ_g_rnlZ6V';
+ if(!SITE_KEY||typeof sb==='undefined'||!sb)return;
+ var token='',widgetId=null,tries=0;
+ var s=document.createElement('script');
+ s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+ s.async=true;document.head.appendChild(s);
+ function ensureWidget(){
+  if(widgetId!==null)return;
+  if(!window.turnstile){if(tries++<30)setTimeout(ensureWidget,400);return}
+  var btn=document.getElementById('authSubmit');if(!btn)return;
+  var row=btn.parentNode;
+  var box=document.createElement('div');box.id='tsBox';box.style.margin='14px 0 4px';
+  row.parentNode.insertBefore(box,row);
+  widgetId=turnstile.render(box,{sitekey:SITE_KEY,
+   callback:function(t){token=t},
+   'expired-callback':function(){token=''},
+   'error-callback':function(){token=''}});
+ }
+ function resetWidget(){token='';if(widgetId!==null&&window.turnstile)turnstile.reset(widgetId)}
+ var noToken={message:'Please complete the human check above, then try again.'};
+ var auth=sb.auth;
+ var oSignUp=auth.signUp.bind(auth),oSignIn=auth.signInWithPassword.bind(auth),oReset=auth.resetPasswordForEmail.bind(auth);
+ auth.signUp=async function(c){
+  if(!token)return {data:{user:null,session:null},error:noToken};
+  c=Object.assign({},c);c.options=Object.assign({},c.options,{captchaToken:token});
+  try{return await oSignUp(c)}finally{resetWidget()}
+ };
+ auth.signInWithPassword=async function(c){
+  if(!token)return {data:{user:null,session:null},error:noToken};
+  c=Object.assign({},c);c.options=Object.assign({},c.options,{captchaToken:token});
+  try{return await oSignIn(c)}finally{resetWidget()}
+ };
+ auth.resetPasswordForEmail=async function(email,o){
+  if(!token)return {data:null,error:noToken};
+  o=Object.assign({},o,{captchaToken:token});
+  try{return await oReset(email,o)}finally{resetWidget()}
+ };
+ var origSet=window.setAuthMode;
+ if(typeof origSet==='function')window.setAuthMode=function(m){origSet(m);setTimeout(ensureWidget,100)};
+})();
 </script>
 
 </body>
