@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#354B3B">
+<meta name="theme-color" content="#354B3B"><link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Me & You">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Me & You</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:wght@500;600;700&display=swap');
@@ -3246,6 +3252,49 @@ applyDesignToUI();
 renderNotifications();
 initSupabase();
 updateAuthUI();
+</script><style>
+.offline-banner{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:13;background:#354B3B;color:#F4EBDD;padding:11px 14px;border-radius:14px;font-size:12px;line-height:1.5;box-shadow:0 4px 15px #0004;display:none}
+.offline-banner.show{display:block}
+</style>
+<div id="offlineBanner" class="offline-banner" role="status">📴 You are offline. You can still look around and write drafts, but sharing, comments and new posts need an internet connection.</div>
+<script>
+(function(){
+ if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+   navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('Service worker not registered',e)});
+  });
+ }
+ var banner=document.getElementById('offlineBanner');
+ function syncOnline(){if(banner)banner.classList.toggle('show',!navigator.onLine)}
+ window.addEventListener('online',syncOnline);
+ window.addEventListener('offline',syncOnline);
+ syncOnline();
+ var deferred=null;
+ function isStandalone(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true}
+ function addInstallCard(html){
+  var host=document.getElementById('comfortCard');
+  if(!host||document.getElementById('installCard'))return null;
+  host.insertAdjacentHTML('beforebegin','<div class="account-detail-panel" id="installCard">'+html+'</div>');
+  return document.getElementById('installCard');
+ }
+ window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferred=e;
+  if(isStandalone())return;
+  addInstallCard('<h2>Install Me &amp; You 📲</h2><p>Add Me &amp; You to your home screen so it opens like an app.</p><button id="installBtn">Install app</button>');
+  var btn=document.getElementById('installBtn');
+  if(btn)btn.addEventListener('click',function(){
+   if(!deferred)return;
+   deferred.prompt();
+   deferred.userChoice.finally(function(){deferred=null;var c=document.getElementById('installCard');if(c)c.remove()});
+  });
+ });
+ window.addEventListener('appinstalled',function(){var c=document.getElementById('installCard');if(c)c.remove()});
+ var ua=navigator.userAgent||'';
+ if(/iphone|ipad|ipod/i.test(ua)&&!isStandalone()){
+  addInstallCard('<h2>Install Me &amp; You 📲</h2><p>In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.</p>');
+ }
+})();
 </script>
 
 </body>
